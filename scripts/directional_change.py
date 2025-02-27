@@ -1,5 +1,5 @@
 from ._abstract import PriceLevels
-
+import matplotlib.pyplot as plt
 
 class DirectionalChange(PriceLevels): 
     def __init__(self, threshold=5.0):
@@ -58,3 +58,8 @@ class DirectionalChange(PriceLevels):
         self.pivots = [(df.index[idx], price, label) for idx, price, label in pivot_points]
                 
         return self.pivots
+    
+    def plot(self, df):
+        super().plot(df)
+        plt.title("Directional Change Algorithm")
+        plt.show()

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import argrelextrema
+import matplotlib.pyplot as plt
 
 from ._abstract import PriceLevels
 
@@ -57,3 +58,8 @@ class ZigZag(PriceLevels):
 
         self.pivots = [(df.index[i], price, label) for i, price, label in zigzag_points]
         return self.pivots
+
+    def plot(self, df):
+        super().plot(df)
+        plt.title("Zigzag Algorithm")
+        plt.show()

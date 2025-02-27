@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+import matplotlib.pyplot as plt
 
 class PriceLevels(ABC):
     def __init__(self, threshold: float):
@@ -25,3 +25,19 @@ class PriceLevels(ABC):
     @abstractmethod
     def fit(self, df):
         pass
+    
+    def plot(self, df):
+        plt.figure(figsize=(20, 6))
+        plt.plot(df.index, df["Close"], label="Price", color="blue", alpha=0.5)
+        
+        if self.pivots:
+            pivot_dates, pivot_prices, pivot_labels = zip(*self.pivots)
+            plt.scatter(pivot_dates, pivot_prices, c=["green" if label == "High" else "red" for label in pivot_labels], label="Pivots")
+            plt.plot(pivot_dates, pivot_prices, color="black", linestyle="--", alpha=0.6)
+            
+        plt.xlabel("Date")
+        plt.ylabel("Price")
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.grid()
+    
