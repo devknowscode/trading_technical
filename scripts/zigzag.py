@@ -1,12 +1,13 @@
 import numpy as np
-from scipy.signal import argrelextrema
+import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.signal import argrelextrema
 
 from ._abstract import PriceLevels
 
 class ZigZag(PriceLevels):
-    def __init__(self, threshold=5.0, depth=10):
-        super().__init__(threshold)
+    def __init__(self, data: pd.DataFrame, threshold=5.0, depth=10):
+        super().__init__(data, threshold)
         self.__depth = depth
 
     @property
@@ -24,10 +25,10 @@ class ZigZag(PriceLevels):
         return sorted(pivots)
         
 
-    def fit(self, df):
-        close = df["Close"].to_numpy()
-        high = df["High"].to_numpy()
-        low = df["Low"].to_numpy()
+    def fit(self):
+        close = self.data["Close"].to_numpy()
+        high = self.data["High"].to_numpy()
+        low = self.data["Low"].to_numpy()
         # Find pivots
         detected_pivots = self.find_pivots(close, high, low)
         if not detected_pivots:
@@ -56,10 +57,10 @@ class ZigZag(PriceLevels):
                         elif current_pivot[2] == "Low" and current_pivot[1] <= last_pivot[1]:
                             zigzag_points[-1] = current_pivot
 
-        self.pivots = [(df.index[i], price, label) for i, price, label in zigzag_points]
+        self.pivots = [(self.data.index[i], price, label) for i, price, label in zigzag_points]
         return self.pivots
 
-    def plot(self, df):
-        super().plot(df)
+    def plot(self):
+        super().plot()
         plt.title("Zigzag Algorithm")
         plt.show()

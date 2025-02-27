@@ -1,9 +1,11 @@
-from ._abstract import PriceLevels
+import pandas as pd
 import matplotlib.pyplot as plt
 
+from ._abstract import PriceLevels
+
 class DirectionalChange(PriceLevels): 
-    def __init__(self, threshold=5.0):
-        super().__init__(threshold)
+    def __init__(self, data: pd.DataFrame, threshold=5.0):
+        super().__init__(data, threshold)
 
     def obstacle_trend_market(self, close):
         ''' todo: 
@@ -47,19 +49,19 @@ class DirectionalChange(PriceLevels):
                 
         return pivot_points
 
-    def fit(self, df):
+    def fit(self):
         # convert series to numpy 
-        close = df["Close"].to_numpy()
-        high = df["High"].to_numpy()
-        low = df["Low"].to_numpy()
+        close = self.data["Close"].to_numpy()
+        high = self.data["High"].to_numpy()
+        low = self.data["Low"].to_numpy()
 
         # find points
         pivot_points = self.find_pivots(close, high, low)
-        self.pivots = [(df.index[idx], price, label) for idx, price, label in pivot_points]
+        self.pivots = [(self.data.index[idx], price, label) for idx, price, label in pivot_points]
                 
         return self.pivots
     
-    def plot(self, df):
-        super().plot(df)
+    def plot(self):
+        super().plot()
         plt.title("Directional Change Algorithm")
         plt.show()
