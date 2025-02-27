@@ -10,7 +10,7 @@ def get_exchange(exchange_id: str) -> Any:
 
 # convert data downloaded to dataframe
 def convert_to_dataframe(data: list[list]) -> pd.DataFrame:
-    df = pd.DataFrame(ohlcv, columns=["Date", "Open", "High", "Low", "Close", "Volume"])
+    df = pd.DataFrame(data, columns=["Date", "Open", "High", "Low", "Close", "Volume"])
     df["Date"] = pd.to_datetime(df["Date"], unit="ms")
     df = df.set_index("Date")
     return df
@@ -19,15 +19,16 @@ def convert_to_dataframe(data: list[list]) -> pd.DataFrame:
 def stored_csv(df: pd.DataFrame, symbol: str, timeframe: str) -> None:
     df.to_csv(f"./data/{symbol.lower()}{timeframe}.csv")
     
-if __name__ == '__main__':
+# downloader
+def downloader(exchange_id: str, symbol: str, timeframe: str, limit: int) -> None:
     # using binance exchange to fetch
-    binance = get_exchange("binance")
-    
-    symbol = "BTCUSDT"
-    timeframe = "4h"
+    binance = get_exchange(exchange_id)
 
     # check exchange has fetch ohlcv data
     if binance.has["fetchOHLCV"]:
-        ohlcv = binance.fetch_ohlcv(symbol, timeframe, limit=1000)
+        ohlcv = binance.fetch_ohlcv(symbol, timeframe, limit)
         data = convert_to_dataframe(ohlcv)
         stored_csv(data, symbol, timeframe)
+
+if __name__ == '__main__':
+    downloader("binance", "BTCUSDT", "4h", 1000)
