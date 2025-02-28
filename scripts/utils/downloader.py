@@ -20,7 +20,7 @@ def stored_csv(df: pd.DataFrame, symbol: str, timeframe: str) -> None:
     df.to_csv(f"./data/{symbol.lower()}{timeframe}.csv")
     
 # downloader
-def downloader(exchange_id: str, symbol: str, timeframe: str, limit: int) -> None:
+def downloader(exchange_id: str, symbol: str, timeframe: str, limit: int) -> pd.DataFrame:
     # using binance exchange to fetch
     binance = get_exchange(exchange_id)
 
@@ -29,6 +29,5 @@ def downloader(exchange_id: str, symbol: str, timeframe: str, limit: int) -> Non
         ohlcv = binance.fetch_ohlcv(symbol, timeframe, limit)
         data = convert_to_dataframe(ohlcv)
         stored_csv(data, symbol, timeframe)
-
-if __name__ == '__main__':
-    downloader("binance", "BTCUSDT", "4h", 1000)
+        
+        return data
