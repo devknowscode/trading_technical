@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ._abstract import Profile
+from ._abstract import __ProfileAnalyzer
 
-class MarketProfile(Profile):
+class MarketProfile(__ProfileAnalyzer):
     def __init__(self, data = None, bin_size=100, perc=70):
         super().__init__(data, bin_size, perc)
     
@@ -33,6 +33,8 @@ class MarketProfile(Profile):
         self.profile = profile
         self.poc = self.poc()
         self.va = self.value_area()
+        
+        return self.profile, self.poc, self.va
 
     def poc(self):
         poc_idx = np.argmax(self.profile["TPOs"])

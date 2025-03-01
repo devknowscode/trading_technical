@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pandas as pd
-from scripts.volume_profile import VolumeProfile
+from scripts.profile.volume_profile import VolumeProfile
 
 symbol = "btcusdt"
 timeframe = "1d"
