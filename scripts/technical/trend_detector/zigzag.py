@@ -3,9 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.signal import argrelextrema
 
-from ._abstract import PriceLevels
+from ._abstract import __TrendDetector
 
-class ZigZag(PriceLevels):
+class ZigZag(__TrendDetector):
     def __init__(self, data: pd.DataFrame, threshold=5.0, depth=10):
         super().__init__(data, threshold)
         self.__depth = depth

@@ -4,7 +4,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scripts.zigzag import ZigZag
+from scripts.ta.trend_detector.zigzag import ZigZag
 
 symbol = "btcusdt"
 timeframe = "1d"

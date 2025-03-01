@@ -4,7 +4,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scripts.directional_change import DirectionalChange
+from scripts.ta.trend_detector.directional_change import DirectionalChange
 
 symbol = "btcusdt"
 timeframe = "1d"
