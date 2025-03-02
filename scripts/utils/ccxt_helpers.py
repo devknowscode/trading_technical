@@ -1,11 +1,15 @@
 import ccxt
 from ccxt.base.types import Any
 
-# config exchange
+
 def get_exchange(exchange_id: str) -> Any:
+    """
+    Configure exchange by id to get from ccxt ('binance', 'okx', 'kucoin', etc..)
+    """
     exchange_class = getattr(ccxt, exchange_id)
     exchange = exchange_class({})
     return exchange
+
 
 def timeframe_to_seconds(timeframe: str) -> int:
     """

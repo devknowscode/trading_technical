@@ -4,12 +4,14 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scripts.ta.trend_detector.directional_change import DirectionalChange
+from scripts.technical.trend_detector import DirectionalChange
 
 symbol = "btcusdt"
 timeframe = "1d"
 # read data
-df = pd.read_csv(f"./data/{symbol}{timeframe}.csv".lower(), index_col=["Date"], parse_dates=["Date"])
+df = pd.read_csv(
+    f"./data/{symbol}{timeframe}.csv".lower(), index_col=["Date"], parse_dates=["Date"]
+)
 
 # zigzag
 dc = DirectionalChange(threshold=10.0)
