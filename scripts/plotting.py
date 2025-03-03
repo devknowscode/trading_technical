@@ -17,7 +17,7 @@ from utils.ccxt_helpers import timeframe_to_seconds
 
 class Plotting:
     def __init__(
-        self, symbol: str, timeframe: str = "5m", limit: int = 1000, interval: int = 1
+        self, symbol: str, timeframe: str = "5m", interval: int = 1
     ):
         """
         Initializes the live plotter for Market Profile.
@@ -30,7 +30,6 @@ class Plotting:
         """
         self.symbol = symbol
         self.timeframe = timeframe
-        self.limit = limit
         self.interval = interval
         self.data_path = Path(f"./data/{symbol.lower()}{timeframe}.csv")
 
@@ -97,7 +96,7 @@ class Plotting:
             since = None
             csv_data = load_data()
             if csv_data is None:
-                since = (datetime.now() - timedelta(seconds=(timeframe_to_seconds(self.timeframe) * 86400)))
+                since = (datetime.now() - timedelta(seconds=(timeframe_to_seconds(self.timeframe) * 100 * 86400)))
             else:
                 since = csv_data.index[-1]
 
@@ -105,7 +104,7 @@ class Plotting:
 
             # Read only the last 100 rows instead of the entire file
             csv_data = pd.read_csv(self.data_path, index_col=["Date"], parse_dates=["Date"])
-            return csv_data[-100:]
+            return csv_data[-100:] if len(csv_data) > 100 else csv_data
         
         # plot static price
         if start is None:
