@@ -72,7 +72,7 @@ class Plotting:
         self.axes[1].invert_xaxis()
         self.axes[1].yaxis.tick_right()
 
-    def load_data(self, start: str, end: str | None, exchange_id: str):
+    def get_data(self, exchange_id: str, start: str | None, end: str | None, is_live: bool = False):
         """Loads data from a local file or downloads it if missing."""
 
         def download_data(start, end=None):
@@ -84,24 +84,48 @@ class Plotting:
                 end=end.isoformat() if end else None,
                 timeframe=self.timeframe,
             )
+            
+        def load_data():
+            """Helper function to load data from the local file if it exists."""
+            if self.data_path.exists():
+                return pd.read_csv(self.data_path, index_col=["Date"], parse_dates=["Date"])
+            return None
 
-        since, until = datetime.fromisoformat(start), (
-            datetime.fromisoformat(end) if end else None
-        )
+        # plot realtime price
+        if is_live:
+            # set start date to download data
+            since = None
+            csv_data = load_data()
+            if csv_data is None:
+                since = (datetime.now() - timedelta(seconds=(timeframe_to_seconds(self.timeframe) * 86400)))
+            else:
+                since = csv_data.index[-1]
 
-        if not self.data_path.exists():
+            download_data(start=since)
+
+            # Read only the last 100 rows instead of the entire file
+            csv_data = pd.read_csv(self.data_path, index_col=["Date"], parse_dates=["Date"])
+            return csv_data[-100:]
+        
+        # plot static price
+        if start is None:
+            raise ValueError("start date is required but missing")
+        since = datetime.fromisoformat(start) 
+        until = datetime.fromisoformat(end) if end else None
+        
+        csv_data = load_data()
+        if csv_data is None:
             return download_data(start=since, end=until)
-        else:
-            data = pd.read_csv(self.data_path, index_col=["Date"], parse_dates=["Date"])
-            data_start, data_end = data.index[0], data.index[-1]
+        
+        data_start, data_end = csv_data.index[0], csv_data.index[-1]
 
-            if since in data.index and (until in data.index if until else True):
-                data = data.loc[start:end]
+        if since in csv_data.index and (until in csv_data.index if until else True):
+            return csv_data.loc[start:end]
 
-            # Determine appropriate download range
-            since = min(data_start, since) if since <= data_end else data_end
-            until = max(until, data_end) if until else None
-            return download_data(start=since, end=until)
+        # Determine appropriate download range
+        since = min(data_start, since) if since <= data_end else data_end
+        until = max(until, data_end) if until else None
+        return download_data(start=since, end=until)
 
     def plot(
         self,
@@ -110,8 +134,8 @@ class Plotting:
         exchange_id: str = "binance",
         profile_type: str = "MarketProfile",
     ):
-        """Plot market/volume profile based on historical price data."""
-        data = self.load_data(start, end, exchange_id)
+        """Plot price and market/volume profile based on historical price data."""
+        data = self.get_data(exchange_id, start, end)
         profile, poc, value_area = getattr(Profiler, profile_type)(data).fit()
 
         # ** LEFT CHART: Price time series **
@@ -168,29 +192,9 @@ class Plotting:
         plt.show()
 
     def update(self, frame, exchange_id: str, profile_type: str):
-        # set start date to download data
-        since = None
-        if self.data_path.exists():
-            data_csv = pd.read_csv(
-                self.data_path, index_col=["Date"], parse_dates=["Date"]
-            )
-            since = data_csv.index[-1].isoformat()
-        else:
-            since = (
-                datetime.now()
-                - timedelta(seconds=(timeframe_to_seconds(self.timeframe) * 86400))
-            ).isoformat()
-
-        downloader(
-            exchange_id=exchange_id,
-            symbol=self.symbol,
-            start=since,
-            timeframe=self.timeframe,
-        )
-
-        # Read only the last 100 rows instead of the entire file
-        data = pd.read_csv(self.data_path, index_col=["Date"], parse_dates=["Date"])
-        data = data[-100:]
+        """Plot price and market/volume profile based on historical price data and realtime."""
+        # Get price data
+        data = self.get_data(exchange_id, start=None, end=None, is_live=True)
 
         # Compute profile
         profile, poc, value_area = getattr(Profiler, profile_type)(data).fit()
