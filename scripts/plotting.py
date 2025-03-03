@@ -103,7 +103,7 @@ class Plotting:
             until = max(until, data_end) if until else None
             return download_data(start=since, end=until)
 
-    def static(
+    def plot(
         self,
         start: str,
         end: str | None = None,
@@ -167,7 +167,7 @@ class Plotting:
         # Show plot
         plt.show()
 
-    def live(self, frame, exchange_id: str, profile_type: str):
+    def update(self, frame, exchange_id: str, profile_type: str):
         # set start date to download data
         since = None
         if self.data_path.exists():
@@ -247,9 +247,9 @@ class Plotting:
             color="#FFB22C",
         )
 
-        # self.fig.canvas.draw_idle()
+        self.fig.canvas.draw_idle()
 
-    def plot(self, exchange_id: str = "binance", profile_type: str = "MarketProfile"):
+    def live(self, exchange_id: str = "binance", profile_type: str = "MarketProfile"):
         anim = FuncAnimation(
             self.fig,
             self.update,
