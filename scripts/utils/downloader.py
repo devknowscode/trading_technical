@@ -65,7 +65,7 @@ def downloader(
     limit: int = 1000,
 ) -> pd.DataFrame:
     # using binance exchange to fetch
-    binance = get_exchange(exchange_id)
+    exchange = get_exchange(exchange_id)
 
     # convert start date and end date to timestamp
     start = datetime.fromisoformat(start)
@@ -75,10 +75,10 @@ def downloader(
         raise ValueError("Start date cannot be greater than end date.")
 
     # convert start date to unix timestamp
-    since = binance.parse8601(start.isoformat())
+    since = exchange.parse8601(start.isoformat())
 
     # check exchange has fetch ohlcv data
-    if binance.has["fetchOHLCV"]:
+    if exchange.has["fetchOHLCV"]:
         ohlcv = []
         limits = fetch_limits(start, end, timeframe, limit)
         for limit in limits:
@@ -88,7 +88,7 @@ def downloader(
                 )
                 since = dt_ts(ts)
 
-            ohlcv_new = binance.fetch_ohlcv(symbol, timeframe, since, limit)
+            ohlcv_new = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
             ohlcv.extend(ohlcv_new)
 
         data = convert_to_dataframe(ohlcv)
