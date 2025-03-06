@@ -7,7 +7,14 @@ from bokeh.io import curdoc, output_notebook
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import gridplot, layout
 from bokeh.transform import factor_cmap
-from bokeh.models import ColumnDataSource, CustomJS, HoverTool, CrosshairTool, NumeralTickFormatter, DatetimeTickFormatter
+from bokeh.models import (
+    ColumnDataSource,
+    CustomJS,
+    HoverTool,
+    CrosshairTool,
+    NumeralTickFormatter,
+    DatetimeTickFormatter,
+)
 from bokeh.models.annotations import Title
 
 from scripts import package_data as pkgdata
@@ -37,6 +44,7 @@ class Plotter:
         self._ohlc_width = 800
         self._top_fig_height = 150
         self._bottom_fig_height = 150
+        self._jupyter_notebook = False
         self._line_chart = False
 
         if data is None:
@@ -80,6 +88,7 @@ class Plotter:
         ohlc_width: int = None,
         top_fig_height: int = None,
         bottom_fig_height: int = None,
+        jupyter_notebook: bool = None,
         chart_theme: str = None,
     ) -> None:
         """Configures the plot settings.
@@ -118,7 +127,7 @@ class Plotter:
             The plot settings will be saved to the active Plotter instance.
 
         """
-        
+
         self._max_graph_over = (
             max_graph_over if max_graph_over is not None else self._max_graph_over
         )
@@ -138,15 +147,15 @@ class Plotter:
             if bottom_fig_height is not None
             else self._bottom_fig_height
         )
+        self._jupyter_notebook = (
+            jupyter_notebook if jupyter_notebook is not None else self._jupyter_notebook
+        )
         self._chart_theme = (
             chart_theme if chart_theme is not None else self._chart_theme
         )
 
     def plot(
-        self, 
-        instrument: str = None, 
-        indicators: dict = None, 
-        show_fig: bool = True
+        self, instrument: str = None, indicators: dict = None, show_fig: bool = True
     ) -> None:
         """Creates a trading chart of OHLC price data and indicators."""
         if instrument is None:
@@ -154,10 +163,10 @@ class Plotter:
         else:
             title_string = f"Plotter IndiView - {instrument}"
         output_file("./output/web/indiview-chart.html", title=title_string)
-        
+
         # Add base data
         source = ColumnDataSource(self._data)
-        
+
         # Main plot
         if self._line_chart:
             source.add(self._data.plot_data, "High")
@@ -171,44 +180,41 @@ class Plotter:
                 "change",
             )
             main_plot = self._plot_candle(source)
-            
+
         # Initialize auto scale arguments
-        self._autoscale_args = {
-            "y_range": main_plot.y_range,
-            "source": source
-        }
-        
+        self._autoscale_args = {"y_range": main_plot.y_range, "source": source}
+
         # Indicators
         bottom_figs = []
         if indicators is not None:
             bottom_figs = self._plot_indicators(indicators, main_plot)
-            
+
         # Auto-sacle y-axis of candlestick chart
         callback = CustomJS(args=self._autoscale_args, code=self._autoscale_code)
         main_plot.x_range.js_on_change("end", callback)
-        
+
         # Compile plots for final figure
         plots = [main_plot] + bottom_figs
         linked_crosshair = CrosshairTool(dimensions="both")
-        
+
         titled = 0
         t = Title()
         t.text = title_string
         for plot in plots:
             if plot is not None:
                 plot.xaxis.major_label_overrides = {
-                    i: date.strftime("%b %d %Y") 
+                    i: date.strftime("%b %d %Y")
                     for i, date in enumerate(pd.to_datetime(self._data["Date"]))
                 }
                 plot.xaxis.bounds = (0, self._data.index[-1])
                 plot.sizing_mode = "stretch_width"
-                
+
                 if titled == 0:
                     plot.title = t
                     titled = 1
-                
+
                 plot.add_tools(linked_crosshair)
-            
+
         # Construct final figure
         fig = gridplot(
             plots,
@@ -218,13 +224,15 @@ class Plotter:
             merge_tools=True,
         )
         fig.sizing_mode = "stretch_width"
-        
+
         # Set theme
         curdoc().theme = self._chart_theme
-        
+
         if show_fig:
+            if self._jupyter_notebook:
+                output_notebook()
             show(fig)
-                  
+
     def _reindex_data(self, data: Union[pd.DataFrame, pd.Series]) -> pd.DataFrame:
         if isinstance(data, pd.Series):
             modified_data = data.to_frame(name="plot_data")
@@ -248,16 +256,11 @@ class Plotter:
             active_drag="pan",
             active_scroll="wheel_zoom",
         )
-        
-        fig.line(
-            "data_index",
-            "plot_data",
-            line_color=line_color,
-            source=source
-        )
-        
+
+        fig.line("data_index", "plot_data", line_color=line_color, source=source)
+
         return fig
-        
+
     def _plot_candle(self, source: ColumnDataSource):
         """Plot OHLC data onto new figure"""
         bull_colour = "#D5E1DD"
@@ -270,9 +273,9 @@ class Plotter:
             ("Open", "@Open{0,0.00}"),
             ("High", "@High{0,0.00}"),
             ("Low", "@Low{0,0.00}"),
-            ("Close", "@Close{0,0.00}")
+            ("Close", "@Close{0,0.00}"),
         ]
-        
+
         candle_plot = figure(
             width=self._ohlc_width,
             height=self._ohlc_height,
@@ -280,8 +283,10 @@ class Plotter:
             active_drag="pan",
             active_scroll="wheel_zoom",
         )
-        
-        candle_plot.segment("index", "High", "index", "Low", color="black", source=source)
+
+        candle_plot.segment(
+            "index", "High", "index", "Low", color="black", source=source
+        )
         candles = candle_plot.vbar(
             "index",
             0.7,
@@ -291,21 +296,21 @@ class Plotter:
             line_color="black",
             fill_color=colour_map,
         )
-        
+
         candle_hovertool = HoverTool(
             tooltips=candle_tooltips,
             formatters={"@Date": "datetime"},
             mode="vline",
             renderers=[candles],
         )
-        
+
         candle_plot.add_tools(candle_hovertool)
-        
+
         return candle_plot
 
     def _plot_indicators(self, indicators: dict, linked_fig):
         """
-        Plot indicators based on indicator type. If indicator type is `over`, it will be plotted on top 
+        Plot indicators based on indicator type. If indicator type is `over`, it will be plotted on top
         of `linked_fig`. If indicator type is `below`, it will be plotted on a new figure below the OHLC chart.
         """
         plot_type = {
@@ -313,21 +318,18 @@ class Plotter:
             "MA": "over",
             "RSI": "below",
         }
-        
+
         # Plot indicators
         graph_over = 0
         graph_below = 0
         bottom_figs = []
         colours = ["red", "blue", "orange", "green", "black", "yellow"]
-        
+
         for indicator in indicators:
             indi_type = indicator[indicator]["type"]
-            
+
             if indi_type in plot_type:
-                if (
-                    plot_type[indi_type] == "over"
-                    and graph_over < self._max_graph_over
-                ):
+                if plot_type[indi_type] == "over" and graph_over < self._max_graph_over:
                     if isinstance(indicators[indicator]["data"], pd.Series):
                         # Timeseries provided, merge indexes
                         if indicators[indicator]["data"].name is None:
@@ -345,7 +347,7 @@ class Plotter:
                         y_vals = line_data.values
                     else:
                         raise Exception("Plot data must be a timeseries.")
-                    
+
                     linked_fig.line(
                         x_vals,
                         y_vals,
@@ -371,7 +373,7 @@ class Plotter:
                         )
                     else:
                         raise Exception("Plot data must be a timeseries.")
-                    
+
                     new_fig = self._plot_line(
                         line_source,
                         linked_fig,
@@ -381,14 +383,16 @@ class Plotter:
                         fig_height=130,
                     )
                     self._add_to_autoscale_args(line_source, new_fig.y_range)
-                    
+
                     graph_below += 1
                     bottom_figs.append(new_fig)
             else:
                 # The indicator plot type is not recognised - plotting on new fig
                 if graph_below < self._max_graph_below:
                     print(f"Indicator type {indi_type} not recognised in Plotter.")
-                    line_source = self._create_line_source(indicators[indicator]["data"])
+                    line_source = self._create_line_source(
+                        indicators[indicator]["data"]
+                    )
                     new_fig = self._plot_line(
                         line_source,
                         linked_fig,
@@ -397,15 +401,15 @@ class Plotter:
                         fig_height=130,
                     )
                     self._add_to_autoscale_args(line_source, new_fig.y_range)
-                    
+
                     graph_below += 1
                     bottom_figs.append(new_fig)
-        
+
         return bottom_figs
-                    
+
     def _plot_line(
-        self, 
-        source: ColumnDataSource, 
+        self,
+        source: ColumnDataSource,
         linked_fig,
         column_name: str,
         new_fig: bool = False,
@@ -425,16 +429,11 @@ class Plotter:
             )
         else:
             fig = linked_fig
-        
-        fig.line(
-            "data_index",
-            column_name,
-            line_color=line_colour,
-            source=source
-        )
-        
+
+        fig.line("data_index", column_name, line_color=line_colour, source=source)
+
         return fig
-        
+
     def _add_to_autoscale_args(self, source: ColumnDataSource, y_range):
         """
         Parameters
@@ -474,9 +473,9 @@ class Plotter:
         line_source.add(merged_indicator_data[data_name].values, "High")
         line_source.add(merged_indicator_data[data_name].values, "Low")
         return line_source
-        
+
+
 if __name__ == "__main__":
     data = pd.read_csv("./data/btcusdt4h.csv", index_col=["Date"], parse_dates=["Date"])
     p = Plotter(data)
     p.plot()
-    
